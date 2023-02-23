@@ -94,6 +94,6 @@ router.get('/checklogin', function(req, res) {
     res.status(401).send({ isLoggedIn: false });
   }
 });
-erer
+
 
 module.exports = router;
