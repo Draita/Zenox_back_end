@@ -86,4 +86,14 @@ router.get('/user/email', async (req, res) => {
 
   res.send(user.email);
 });
+
+router.get('/checklogin', function(req, res) {
+  if (req.session.user) {
+    res.status(200).send({ isLoggedIn: true });
+  } else {
+    res.status(401).send({ isLoggedIn: false });
+  }
+});
+erer
+
 module.exports = router;
