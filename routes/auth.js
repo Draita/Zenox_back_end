@@ -3,6 +3,10 @@ const router = express.Router();
 
 const bcrypt = require('bcrypt');
 const User = require('../models/user');
+const { Profile } = require('../models/profile');
+
+
+
 
 
 
@@ -19,19 +23,39 @@ router.get('/dev/session/:data', function (req,res){
 });
 
 
+// Register a new user
 router.post('/register', async (req, res) => {
-  const hashedPassword = await bcrypt.hash(req.body.password, 10);
-  const user = new User({
-    email: req.body.email,
-    password: hashedPassword
-  });
+  const { username, email, password } = req.body;
+
   try {
+    // Check if user already exists
+    let user = await User.findOne({ email });
+
+    if (user) {
+      return res.status(400).json({ msg: 'User already exists' });
+    }
+
+    // Create new user
+    user = new User({ username, email, password });
+
+    // Save user to database
     await user.save();
-    console.log(user);
-    res.status(201).json(hashedPassword);
+
+    // Create profile for the user
+    const profile = new Profile({
+      user: user._id,
+      bio: 'Welcome to my profile!',
+      avatar: 'default-avatar.jpg'
+    });
+
+    // Save profile to database
+    await profile.save();
+    console.log(profile)
+
+    res.status(200).json({ msg: 'User registered successfully' });
   } catch (err) {
-    console.log(err);
-    res.status(500);
+    console.error(err.message);
+    res.status(500).send('Server error');
   }
 });
 
@@ -94,6 +118,8 @@ router.get('/checklogin', function(req, res) {
     res.status(401).send({ isLoggedIn: false });
   }
 });
+
+
 
 
 module.exports = router;
