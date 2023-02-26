@@ -7,7 +7,7 @@ const fileUpload = require('express-fileupload');
 
 const bodyParser = require('body-parser');
 
-
+app.set("trust proxy", 1);
 app.use(fileUpload());
 
 const DB_URL = 'mongodb+srv://thijmen:1234@social-media.m9iei1k.mongodb.net/test';

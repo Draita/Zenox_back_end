@@ -32,8 +32,8 @@ router.get('/get/:username', async (req, res) => {
     }
 
     // Retrieve the username, profile picture, and description
+    //TODO: don't send profile picture here
     const { username: retrievedUsername, profilePicture, description } = user;
-
     // Return the user's information
     res.status(200).json({ username: retrievedUsername, profilePicture, description });
   } catch (err) {
@@ -46,6 +46,7 @@ router.get('/get/:username', async (req, res) => {
 
 router.post('/update_profile', authMiddleware, async (req, res, next) => {
   try {
+
     const user = await User.findById(req.user._id);
 
     if (!user) {
@@ -75,6 +76,7 @@ router.post('/update_profile', authMiddleware, async (req, res, next) => {
     }
 
     await user.save();
+    console.log("saved");
 
     return res.status(200).send('ok');
   } catch (err) {
@@ -102,6 +104,7 @@ router.get('/profile_picture/:username', async (req, res) => {
     res.set('Cache-Control', 'public, max-age=31557600');
 
     // Return the user's profile picture data as an image
+    console.log(user.username)
     return res.send(user.profilePicture);
   } catch (err) {
     console.error(err.message);
