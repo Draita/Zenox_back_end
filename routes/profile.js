@@ -3,6 +3,8 @@ const router = express.Router();
 const User = require('../models/user');
 const bodyParser = require('body-parser');
 const sharp = require('sharp');
+const authMiddleware = require('../middlewares/authMiddleware');
+
 
 
 
@@ -40,44 +42,44 @@ router.get('/get/:username', async (req, res) => {
   }
 });
 
-router.post('/upload_profile_picture', async (req, res, next) => {
-  console.log("YOOO1")
-  if (!req.files || !req.files.file) {
-    return res.status(400).send('No file uploaded');
-  }
-  console.log("YOOO2")
 
 
-  const myFile = req.files.file;
-  const contentType = myFile.mimetype;
-
-  // Check if file is an image
-  if (!contentType.startsWith('image/')) {
-    return res.status(400).send('File uploaded is not an image');
-  }
-
-  // Resize and crop image
-  console.log("YOOO3")
-
+router.post('/update_profile', authMiddleware, async (req, res, next) => {
   try {
-    const buffer = await sharp(myFile.data)
-      .resize(512, 512, { fit: 'cover' })
-      .jpeg()
-      .toBuffer();
-    console.log("YOOO4")
+    const user = await User.findById(req.user._id);
 
+    if (!user) {
+      return res.status(404).send('User not found');
+    }
 
-    const user = await User.findByIdAndUpdate(
-      req.session.user._id,
-      { profilePicture: buffer },
-      { new: true }
-    );
+    if (req.body.description) {
+      user.description = req.body.description;
+    }
+
+    if (req.files && req.files.file) {
+      const myFile = req.files.file;
+      const contentType = myFile.mimetype;
+
+      // Check if file is an image
+      if (!contentType.startsWith('image/')) {
+        return res.status(400).send('File uploaded is not an image');
+      }
+
+      // Resize and crop image
+      const buffer = await sharp(myFile.data)
+        .resize(512, 512, { fit: 'cover' })
+        .jpeg()
+        .toBuffer();
+
+      user.profilePicture = buffer;
+    }
+
+    await user.save();
 
     return res.status(200).send('ok');
-
   } catch (err) {
-    console.log(err)
-    return res.status(404).send(err);
+    console.log(err);
+    return res.status(500).send('Server error');
   }
 });
 
@@ -108,5 +110,9 @@ router.get('/profile_picture/:username', async (req, res) => {
   }
 });
 
+router.get('/username', authMiddleware, async (req, res) =>{
+  res.send(req.user.username)
+
+});
 
 module.exports = router;
