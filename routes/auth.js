@@ -52,9 +52,10 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {expiresIn: "2h"});
     // Set the token as a cookie in the user's browser
     res.cookie('token', token, {
-      // httpOnly: true
-      sameSite: "none"
-
+      maxAge: 1000*60*60,
+      httpOnly: true,
+      sameSite: "none",
+      secure: true,
 
     });
     // Return success message
