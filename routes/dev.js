@@ -3,7 +3,7 @@ const router = express.Router();
 const Message = require('../models/message');
 const User = require('../models/user');
 
-router.get('/dev/session', function (req, res) {
+router.get('/session', function (req, res) {
     res.send(req.session);
   });
 
@@ -19,7 +19,15 @@ router.get('/dev/session', function (req, res) {
 
   router.get('/login', async (req, res) => {
     const user = await User.findOne({ email: "bob@gmail.com" });
-    req.session.user = user;
+      // Create a JWT token with the user ID and secret key
+      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {expiresIn: "2h"});
+      // Set the token as a cookie in the user's browser
+      res.cookie('token', token, { httpOnly: true });
+      // Return success message
+
+      user.token = token
+      await user.save();
+
     // Return success message
     res.status(200).json({ success: true });
   });
