@@ -6,7 +6,6 @@ const messageSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  //here the location is stored where it's send
   location: {
     type: String,
     required: true,
@@ -17,12 +16,21 @@ const messageSchema = new mongoose.Schema({
     required: true,
     default: Date.now
   },
+  media: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Media',
+  },
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
-
+  likes: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }
+  ]
 });
 
 const Message = mongoose.model('Message', messageSchema);
