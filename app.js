@@ -11,7 +11,7 @@ const bodyParser = require('body-parser');
 
 app.use(fileUpload());
 
-const DB_URL = 'mongodb://127.0.0.1:27017/zenox';
+const DB_URL = 'mongodb+srv://thijmen:1234@social-media.m9iei1k.mongodb.net/test';
 
 mongoose.set('strictQuery', false);
 
