@@ -91,7 +91,6 @@ router.get('/profile_picture/:username', async (req, res) => {
 
     // Find the user by their username
     const user = await User.findOne({ username });
-    console.log(user)
 
     // If the user does not exist or has no profile picture, return a 404 response
     if (!user || !user.profilePicture) {
