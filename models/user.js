@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-  //TODO: ADD FUNCTIOANLITY SO THAT THE USER HAS A UNIQUE which is generated so that the user can change their username
   email: {
     type: String,
     required: true,
@@ -28,7 +27,11 @@ const userSchema = new mongoose.Schema({
     required: false,
     trim: true,
     default: 'HII I AM BOB'
-  }
+  },
+  token: {
+    type: String
+  },
+  following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
 });
 
 const User = mongoose.model('User', userSchema);
