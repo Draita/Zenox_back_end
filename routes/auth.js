@@ -3,20 +3,11 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 const User = require('../models/user');
+const jwt = require('jsonwebtoken');
+require("dotenv").config();
 
-router.get('/dev/session', function (req, res) {
-  res.send(req.session);
-});
+const authMiddleware = require('../middlewares/authMiddleware');
 
-router.get('/dev/sessionID', function (req, res) {
-  res.send(req.sessionID);
-});
-
-router.get('/dev/session/:data', function (req, res) {
-  var data = req.params.data;
-  req.session[data] = data;
-  res.send(req.session);
-});
 
 // Register a new user
 router.post('/register', async (req, res) => {
@@ -53,9 +44,15 @@ router.post('/login', async (req, res) => {
     if (!isMatch) {
       return res.status(400).send('Invalid email or password');
     }
-    // Set session user to the authenticated user
-    req.session.user = user;
+    // Create a JWT token with the user ID and secret key
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {expiresIn: "2h"});
+    // Set the token as a cookie in the user's browser
+    res.cookie('token', token, { httpOnly: true });
     // Return success message
+
+    user.token = token;
+    await user.save();
+    console.log(user.token)
     res.status(200).json({ success: true });
   } catch (err) {
     // Return error message
@@ -63,33 +60,19 @@ router.post('/login', async (req, res) => {
   }
 });
 
-router.get('/logout', (req, res) => {
+
+router.get('/logout', authMiddleware, (req, res) => {
+  //TODO: add that the token is destroyed in the database
   req.session.destroy((err) => {
     if (err) return res.status(500).send(err);
-    res.clearCookie('connect.sid').end();
+    res.clearCookie('token').end();
   });
 });
 
-router.get('/user/email', async (req, res) => {
-  if (!req.session.user) {
-    return res.status(401).send('Not logged in');
-  }
-  const user = await User.findById(req.session.user._id);
-  if (!user) {
-    return res.status(404).send('User not found');
-  }
-  res.send(user.email);
+
+// checklogin
+router.get('/checklogin', authMiddleware, async (req, res) => {
+  res.status(200).json(req.user.username);
 });
-
-router.get('/checklogin', function (req, res) {
-  if (req.session.user) {
-    res.status(200).send(req.session.user.username);
-  }
-  res.status(401).send('Not logged in');
-});
-
-
-
-module.exports = router;
 
 module.exports = router;
