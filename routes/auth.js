@@ -33,28 +33,40 @@ router.post('/register', async (req, res) => {
 
 router.post('/login', async (req, res) => {
   try {
+    console.log("1")
     // Check if user exists in the database
     const user = await User.findOne({ email: req.body.email });
+    console.log("2")
+
     // Return error if user does not exist
     if (!user) {
       return res.status(400).send('Invalid email or password');
     }
+    console.log("3")
+
     // Check if password matches hashed password in the database
     const isMatch = await bcrypt.compare(req.body.password, user.password);
+    console.log("4")
+
     if (!isMatch) {
       return res.status(400).send('Invalid email or password');
     }
+    console.log("6")
+
     // Create a JWT token with the user ID and secret key
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {expiresIn: "2h"});
     // Set the token as a cookie in the user's browser
     res.cookie('token', token, { httpOnly: true });
     // Return success message
+    console.log("7")
+
 
     user.token = token;
     await user.save();
     console.log(user.token)
     res.status(200).json({ success: true });
   } catch (err) {
+    console.log(err)
     // Return error message
     res.status(500).send(err);
   }
