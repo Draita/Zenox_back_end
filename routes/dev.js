@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const Message = require('../models/message');
 const User = require('../models/user');
+const jwt = require('jsonwebtoken');
+
 
 router.get('/session', function (req, res) {
     res.send(req.session);
