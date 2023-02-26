@@ -40,6 +40,7 @@ app.use((req, res, next) => {
     'Access-Control-Allow-Headers',
     'Origin, X-Requested-With, Content-Type, Accept',
   );
+  res.header("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE");
   next();
 });
 
@@ -61,6 +62,14 @@ app.use('/profile', profileRoutes);
 
 const messagesRoutes = require('./routes/messages');
 app.use('/messages', messagesRoutes);
+
+const followRoutes = require('./routes/follow');
+app.use('/follow', followRoutes);
+const mediaRoutes = require('./routes/media');
+app.use('/media', mediaRoutes);
+
+
+
 
 const devRoutes = require('./routes/dev');
 app.use('/dev', devRoutes);
