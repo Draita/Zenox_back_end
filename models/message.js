@@ -30,7 +30,8 @@ const messageSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     }
-  ]
+  ],
+  replies: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Message' }]
 });
 
 const Message = mongoose.model('Message', messageSchema);

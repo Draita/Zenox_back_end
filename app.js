@@ -1,7 +1,8 @@
 const express = require('express');
 const app = express();
 const cookieParser = require('cookie-parser');
-const session = require('express-session');
+
+//TODO: DESTROY FUCKING EXPRESS SESSION
 const mongoose = require('mongoose');
 const fileUpload = require('express-fileupload');
 
@@ -30,8 +31,12 @@ app.use(express.urlencoded({limit: '50mb', extended: true, parameterLimit: 10000
 app.use(express.json({limit: '200mb'}));
 app.use(express.text({ limit: '200mb' }));
 app.use(cookieParser())
-app.use(session({ secret: "twethwethbternhj" }))
 
+
+app.get('/', (req, res) => {
+  res.send("bro").status(200)
+
+});
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', req.headers.origin);
   res.header('Access-Control-Allow-Credentials', true);
@@ -88,6 +93,6 @@ process.on('unhandledRejection', (err) => {
 
 
 
-app.listen(5000, () => {
+app.listen(process.env.PORT, () => {
   console.log('Server started on rwe port 5000');
 });

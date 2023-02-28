@@ -6,9 +6,13 @@ const Media = require("../models/media");
 
 const authMiddleware = require("../middlewares/authMiddleware");
 
-
 // POST a new message
 const sharp = require("sharp");
+
+router.post("/reply", authMiddleware, async (req, res) => {
+
+  res.sendStatus(200);
+});
 
 router.post("/", authMiddleware, async (req, res) => {
   try {
@@ -41,20 +45,30 @@ router.post("/", authMiddleware, async (req, res) => {
     }
 
     const message = new Message({ content, location, media, user: req.user });
-    await message.save();
 
-    res.sendStatus(200);
+    const userWithoutdata = new User({
+      _id: req.user._id,
+      username: req.user.username,
+    });
+
+     message.save(async function (err, output) {
+      const userWithoutdata = new User({
+        _id: req.user._id,
+        username: req.user.username,
+      });
+      output.user = userWithoutdata;
+      res.status(200).send(output);
+    });
   } catch (error) {
     console.error("🤡 Clown! Error saving new message:", error);
     res.sendStatus(500);
   }
 });
 
-
 router.post("/discover", async (req, res) => {
   try {
     const { username, filter } = req.body;
-    console.log( username, filter)
+    console.log(username, filter);
     var messages = await Message.find()
       .sort({ timestamp: "desc" })
       .populate("user", "username")
@@ -183,7 +197,6 @@ async function addLikedField(messages, req) {
 }
 
 const filterMessages = async (messages, username, filter) => {
-
   if (username) {
     messages = messages.filter((message) => message.user.username === username);
   }
