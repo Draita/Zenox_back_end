@@ -6,12 +6,14 @@ const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
 const fileUpload = require('express-fileupload');
 
+const cors = require('cors')
+
 const bodyParser = require('body-parser');
 
 app.set("trust proxy", 1);
 app.use(fileUpload());
 
-const DB_URL = 'mongodb+srv://thijmen:1234@social-media.m9iei1k.mongodb.net/test';
+const DB_URL = process.env.DATABASE_URL
 
 mongoose.set('strictQuery', false);
 
@@ -37,16 +39,21 @@ app.get('/', (req, res) => {
   res.send("bro").status(200)
 
 });
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin);
-  res.header('Access-Control-Allow-Credentials', true);
-  res.header(
-    'Access-Control-Allow-Headers',
-    'Origin, X-Requested-With, Content-Type, Accept',
-  );
-  res.header("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE");
-  next();
-});
+
+app.use(cors({
+  origin: '*'
+}));
+
+// app.use((req, res, next) => {
+//   res.header('Access-Control-Allow-Origin', req.headers.origin);
+//   res.header('Access-Control-Allow-Credentials', true);
+//   res.header(
+//     'Access-Control-Allow-Headers',
+//     'Origin, X-Requested-With, Content-Type, Accept',
+//   );
+//   res.header("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE");
+//   next();
+// });
 
 
 // fixing "413 Request Entity Too Large" errors
@@ -94,5 +101,5 @@ process.on('unhandledRejection', (err) => {
 
 
 app.listen(process.env.PORT, () => {
-  console.log('Server started on rwe port 5000');
+  console.log('Server started on port 3000');
 });
