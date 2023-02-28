@@ -12,11 +12,6 @@ const userSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  UUID: {
-    type: String,
-    required: true,
-    trim:true
-  },
   username: {
     type: String,
     required: true,
@@ -34,7 +29,8 @@ const userSchema = new mongoose.Schema({
     default: 'HII I AM BOB'
   },
   token: {
-    type: String
+    type: String,
+    required: true,
   },
   following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
 });
