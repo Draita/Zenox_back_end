@@ -72,15 +72,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-router.get('/set-cookie', (req, res) => {
-  res.cookie('test1', 'YOOOOOO')
-  res.status(200).json({ success: true });
-});
 
-router.get('/delete-cookie', (req, res) => {
-  res.cookie('test1', '0')
-  res.status(200).json({ success: true });
-});
 
 router.get('/logout', authMiddleware, (req, res) => {
   res.clearCookie('token',{
