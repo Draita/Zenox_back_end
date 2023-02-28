@@ -9,10 +9,6 @@ const authMiddleware = require("../middlewares/authMiddleware");
 // POST a new message
 const sharp = require("sharp");
 
-router.post("/reply", authMiddleware, async (req, res) => {
-
-  res.sendStatus(200);
-});
 
 router.post("/", authMiddleware, async (req, res) => {
   try {
@@ -23,10 +19,8 @@ router.post("/", authMiddleware, async (req, res) => {
     if (myFile) {
       const contentType = myFile.mimetype;
       if (
-        !contentType.startsWith("image/") &&
-        !contentType.startsWith("video/")
-      ) {
-        res.status(400).send("Only images and videos are allowed");
+        !contentType.startsWith("image/")) {
+        res.status(400).send("Only images");
         return;
       }
 
@@ -65,11 +59,94 @@ router.post("/", authMiddleware, async (req, res) => {
   }
 });
 
+
+
+router.post('/:id/reply', authMiddleware, async (req, res) => {
+  try {
+    const parentMessage = await Message.findById(req.params.id);
+
+    if (!parentMessage) {
+      return res.status(404).send('Message not found');
+    }
+
+    const { content, location } = req.body;
+
+    let media;
+    const myFile = req.files?.file;
+    if (myFile) {
+      const contentType = myFile.mimetype;
+      if (
+        !contentType.startsWith('image/') &&
+        !contentType.startsWith('video/')
+      ) {
+        return res.status(400).send('Only images and videos are allowed');
+      }
+
+      let buffer = myFile.data;
+      if (contentType.startsWith('image/')) {
+        // Compress the image if it is larger than 1MB
+
+        buffer = await sharp(myFile.data)
+          .resize(800, 800)
+          .jpeg({ quality: 80 })
+          .toBuffer();
+      }
+
+      media = new Media({ data: buffer, contentType });
+      await media.save();
+    }
+
+    const reply = new Message({
+      content,
+      location,
+      media,
+      user: req.user,
+      location: "reply",
+      timestamp: Date.now(),
+    });
+
+    await reply.save();
+
+    parentMessage.replies.push(reply._id);
+    await parentMessage.save();
+
+    res.sendStatus(200);
+  } catch (error) {
+    console.error('Error adding reply:', error);
+    res.sendStatus(500);
+  }
+});
+
+router.get("/replies/:messageId", async (req, res) => {
+  try {
+    const message = await Message.findById(req.params.messageId).populate({
+      path: "replies",
+      options: { sort: { timestamp: "desc" } }, // sort replies by timestamp in descending order
+      populate: {
+        path: "user",
+        select: "username"
+      }
+    });
+
+    if (!message) {
+      return res.status(404).json({ msg: "Message not found" });
+    }
+
+    const replies = message.replies;
+
+    res.json(replies);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Server Error");
+  }
+});
+
+
+
 router.post("/discover", async (req, res) => {
   try {
     const { username, filter } = req.body;
-    console.log(username, filter);
-    var messages = await Message.find()
+    var messages = await Message.find({location: "feed"})
       .sort({ timestamp: "desc" })
       .populate("user", "username")
       .populate("likes", "username")
@@ -87,8 +164,8 @@ router.post("/discover", async (req, res) => {
 //get all messages that where posted under the profile of a user
 router.get("/profile/:username", async (req, res) => {
   try {
-    const user = await User.findOne({ username: req.params.username });
-    var messages = await Message.find({ user: user._id })
+    const user = await User.findOne({ username: req.params.username,});
+    var messages = await Message.find({ user: user._id ,  location: "feed"})
       .sort({ timestamp: -1 })
       .populate("user", "username")
       .populate("likes", "username")
@@ -110,9 +187,12 @@ router.get("/feed", authMiddleware, async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    // Collect messages from following users
+    // Collect messages from following users in the "feed" location
     const following = user.following.map((user) => user.id);
-    var messages = await Message.find({ user: { $in: following } })
+    var messages = await Message.find({
+      user: { $in: following },
+      location: "feed" // Filter messages for "feed" location
+    })
       .populate("user", "username")
       .populate("likes", "username")
       .lean();
@@ -175,6 +255,27 @@ router.delete("/:id", authMiddleware, async (req, res) => {
   }
 });
 
+
+
+async function addLikedField(messages, req) {
+  const token = req.cookies.token;
+  const currentUser = await User.findOne({ token });
+
+  messages.forEach(function (message) {
+    const likes = message.likes;
+    var liked = false;
+    likes.forEach(function (like) {
+      if (like.username == currentUser.username) {
+        liked = true;
+        return "ok";
+      }
+    });
+
+    message.liked = liked;
+  });
+
+  return messages;
+}
 // Add a "liked" field to each message indicating whether the authenticated user has liked it
 async function addLikedField(messages, req) {
   const token = req.cookies.token;
@@ -196,6 +297,28 @@ async function addLikedField(messages, req) {
   return messages;
 }
 
+async function addRepliedField(messages, req) {
+  const token = req.cookies.token;
+  const currentUser = await User.findOne({ token });
+
+  messages.forEach(function (message) {
+    const likes = message.likes;
+    var liked = false;
+    likes.forEach(function (like) {
+      if (like.username == currentUser.username) {
+        liked = true;
+        return "ok";
+      }
+    });
+
+    message.liked = liked;
+  });
+
+  return messages;
+}
+
+
+//used to filter messages
 const filterMessages = async (messages, username, filter) => {
   if (username) {
     messages = messages.filter((message) => message.user.username === username);
