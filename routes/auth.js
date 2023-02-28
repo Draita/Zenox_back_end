@@ -22,7 +22,9 @@ router.post('/register', async (req, res) => {
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     // Create new user with hashed password
-    user = new User({ username, email, password: hashedPassword, description, profilePicture, UUID: uuidv4() });
+    const token = jwt.sign({ UUID: uuidv4() }, process.env.JWT_SECRET);
+
+    user = new User({ username, email, password: hashedPassword, description, profilePicture, token });
     // Save user to database
     await user.save();
     res.status(201).json({ msg: 'User registered successfully' });
@@ -34,11 +36,13 @@ router.post('/register', async (req, res) => {
 
 router.post('/login', async (req, res) => {
   try {
+    console.log("1")
     // Check if user exists in the database
     const user = await User.findOne({ email: req.body.email });
 
     // Return error if user does not exist
     if (!user) {
+
       return res.status(400).send('Invalid email or password');
     }
 
@@ -49,15 +53,17 @@ router.post('/login', async (req, res) => {
       return res.status(400).send('Invalid email or password');
     }
     // Create a JWT token with the user ID and secret key
-    const token = jwt.sign({ userId: user.UUID }, process.env.JWT_SECRET, {expiresIn: "2h"});
 
+    const token = user.token
     // Set the token as a cookie in the user's browser
-    res.cookie('token', token);
+
+    res.cookie('token', token, {
+      secure: true,
+      httpOnly: true,
+      sameSite: "none"
+    })
+    res.cookie('test1', 'test')
     // Return success message
-
-
-    user.token = token;
-    await user.save();
     res.status(200).json({ success: true });
   } catch (err) {
     console.log(err)
@@ -66,9 +72,23 @@ router.post('/login', async (req, res) => {
   }
 });
 
+router.get('/set-cookie', (req, res) => {
+  res.cookie('test1', 'YOOOOOO')
+  res.status(200).json({ success: true });
+});
 
-router.get('/logout', authMiddleware, (req, res) => {``
-  res.cookie('token', "0");
+router.get('/delete-cookie', (req, res) => {
+  res.cookie('test1', '0')
+  res.status(200).json({ success: true });
+});
+
+router.get('/logout', authMiddleware, (req, res) => {
+  res.clearCookie('token',{
+    secure: true,
+    httpOnly: true,
+    sameSite: "none",
+  });
+  res.cookie('test1', '0')
   res.status(200).json({ success: true });
 });
 
