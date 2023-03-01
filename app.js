@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require('express');
 const app = express();
 const cookieParser = require('cookie-parser');
@@ -13,11 +14,11 @@ const bodyParser = require('body-parser');
 app.set("trust proxy", 1);
 app.use(fileUpload());
 
-const DB_URL = process.env.DATABASE_URL
+
 
 mongoose.set('strictQuery', false);
 
-mongoose.connect(DB_URL, {
+mongoose.connect(process.env.DATABASE_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 }).then(() => {
@@ -40,9 +41,6 @@ app.get('/', (req, res) => {
 
 });
 
-// app.use(cors({
-//   origin: '*'
-// }));
 
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', req.headers.origin);
