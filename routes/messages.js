@@ -10,56 +10,52 @@ const authMiddleware = require("../middlewares/authMiddleware");
 const sharp = require("sharp");
 
 
+async function handleMedia(req) {
+  let media;
+  const myFile = req.files?.file;
+  if (myFile) {
+    const contentType = myFile.mimetype;
+    if (!contentType.startsWith("image/")) {
+      throw new Error("Only images");
+    }
+
+    let buffer = myFile.data;
+    if (contentType.startsWith("image/")) {
+      // Compress the image if it is larger than 1MB
+      buffer = await sharp(myFile.data)
+        .resize(800, 800)
+        .jpeg({ quality: 80 })
+        .toBuffer();
+    }
+
+    media = new Media({ data: buffer, contentType });
+    await media.save();
+  }
+  return media;
+}
+
+async function handleMessage(req, content, location, media) {
+  const message = new Message({ content, location, media, user: req.user });
+  const userWithoutdata = new User({
+    _id: req.user._id,
+    username: req.user.username,
+  });
+  const output = await message.save();
+  output.user = userWithoutdata;
+  return output;
+}
+
 router.post("/", authMiddleware, async (req, res) => {
   try {
     const { content, location } = req.body;
-
-    let media;
-    const myFile = req.files?.file;
-    if (myFile) {
-      const contentType = myFile.mimetype;
-      if (
-        !contentType.startsWith("image/")) {
-        res.status(400).send("Only images");
-        return;
-      }
-
-      let buffer = myFile.data;
-      if (contentType.startsWith("image/")) {
-        // Compress the image if it is larger than 1MB
-
-        buffer = await sharp(myFile.data)
-          .resize(800, 800)
-          .jpeg({ quality: 80 })
-          .toBuffer();
-      }
-
-      media = new Media({ data: buffer, contentType });
-      await media.save();
-    }
-
-    const message = new Message({ content, location, media, user: req.user });
-
-    const userWithoutdata = new User({
-      _id: req.user._id,
-      username: req.user.username,
-    });
-
-     message.save(async function (err, output) {
-      const userWithoutdata = new User({
-        _id: req.user._id,
-        username: req.user.username,
-      });
-      output.user = userWithoutdata;
-      res.status(200).send(output);
-    });
+    const media = await handleMedia(req);
+    const output = await handleMessage(req, content, location, media);
+    res.status(200).send(output);
   } catch (error) {
     console.error("🤡 Clown! Error saving new message:", error);
     res.sendStatus(500);
   }
 });
-
-
 
 router.post('/:id/reply', authMiddleware, async (req, res) => {
   try {
@@ -70,32 +66,7 @@ router.post('/:id/reply', authMiddleware, async (req, res) => {
     }
 
     const { content, location } = req.body;
-
-    let media;
-    const myFile = req.files?.file;
-    if (myFile) {
-      const contentType = myFile.mimetype;
-      if (
-        !contentType.startsWith('image/') &&
-        !contentType.startsWith('video/')
-      ) {
-        return res.status(400).send('Only images and videos are allowed');
-      }
-
-      let buffer = myFile.data;
-      if (contentType.startsWith('image/')) {
-        // Compress the image if it is larger than 1MB
-
-        buffer = await sharp(myFile.data)
-          .resize(800, 800)
-          .jpeg({ quality: 80 })
-          .toBuffer();
-      }
-
-      media = new Media({ data: buffer, contentType });
-      await media.save();
-    }
-
+    const media = await handleMedia(req);
     const reply = new Message({
       content,
       location,
