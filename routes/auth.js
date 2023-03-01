@@ -10,6 +10,39 @@ const authMiddleware = require('../middlewares/authMiddleware');
 const { v4: uuidv4 } = require('uuid');
 
 
+router.post('/check-email', async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (user) {
+      return res.status(200).json({ exists: true });
+    } else {
+      return res.status(200).json({ exists: false });
+    }
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'An error occurred while checking email' });
+  }
+});
+
+router.post('/check-username', async (req, res) => {
+  const { username } = req.body;
+
+  try {
+    const user = await User.findOne({ username });
+    console.log(user)
+    if (user) {
+      return res.status(200).json({ exists: true });
+    } else {
+      return res.status(200).json({ exists: false });
+    }
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'An error occurred while checking the username' });
+  }
+});
+
 // Register a new user
 router.post('/register', async (req, res) => {
   const { username, email, password, description, profilePicture } = req.body;
@@ -24,10 +57,18 @@ router.post('/register', async (req, res) => {
     // Create new user with hashed password
     const token = jwt.sign({ UUID: uuidv4() }, process.env.JWT_SECRET);
 
+
     user = new User({ username, email, password: hashedPassword, description, profilePicture, token });
     // Save user to database
     await user.save();
-    res.status(201).json({ msg: 'User registered successfully' });
+
+    // automatically login user after register
+    res.cookie('token', token, {
+      secure: true,
+      httpOnly: true,
+      sameSite: "none"
+    })
+    res.status(201).json({ msg: 'User registered successfully' ,username: user.username});
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
@@ -36,7 +77,6 @@ router.post('/register', async (req, res) => {
 
 router.post('/login', async (req, res) => {
   try {
-    console.log("1")
     // Check if user exists in the database
     const user = await User.findOne({ email: req.body.email });
 
@@ -45,6 +85,7 @@ router.post('/login', async (req, res) => {
 
       return res.status(400).send('Invalid email or password');
     }
+
 
     // Check if password matches hashed password in the database
     const isMatch = await bcrypt.compare(req.body.password, user.password);
@@ -62,9 +103,8 @@ router.post('/login', async (req, res) => {
       httpOnly: true,
       sameSite: "none"
     })
-    res.cookie('test1', 'test')
     // Return success message
-    res.status(200).json({ success: true });
+    res.status(200).json({ success: true , username: user.username});
   } catch (err) {
     console.log(err)
     // Return error message
@@ -87,7 +127,6 @@ router.get('/logout', authMiddleware, (req, res) => {
 
 // checklogin
 router.get('/checklogin', authMiddleware, async (req, res) => {
-  console.log(req.user.username)
   res.status(200).json(req.user.username);
 });
 
