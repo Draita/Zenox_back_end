@@ -114,7 +114,7 @@ router.get("/replies/:messageId", async (req, res) => {
 
 
 
-router.post("/discover", async (req, res) => {
+router.post("/discover", authMiddleware, async (req, res) => {
   try {
     const { username, filter } = req.body;
     var messages = await Message.find({location: "feed"})
@@ -125,6 +125,8 @@ router.post("/discover", async (req, res) => {
 
     messages = await filterMessages(messages, username, filter);
     messages = await addLikedField(messages, req);
+    messages = await addPostedSelf(messages, req);
+
     res.json(messages);
   } catch (err) {
     console.error(err);
@@ -133,7 +135,7 @@ router.post("/discover", async (req, res) => {
 });
 
 //get all messages that where posted under the profile of a user
-router.get("/profile/:username", async (req, res) => {
+router.get("/profile/:username", authMiddleware, async (req, res) => {
   try {
     const user = await User.findOne({ username: req.params.username,});
     var messages = await Message.find({ user: user._id ,  location: "feed"})
@@ -143,6 +145,9 @@ router.get("/profile/:username", async (req, res) => {
       .lean();
 
     messages = await addLikedField(messages, req);
+    console.log(req.user.username)
+
+    messages = await addPostedSelf(messages, req);
 
     res.json(messages);
   } catch (error) {
@@ -169,6 +174,8 @@ router.get("/feed", authMiddleware, async (req, res) => {
       .lean();
 
     messages = await addLikedField(messages, req);
+    messages = await addPostedSelf(messages, req);
+
     res.json(messages);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -226,7 +233,13 @@ router.delete("/:id", authMiddleware, async (req, res) => {
   }
 });
 
-
+async function addPostedSelf(messages, req){
+  messages = messages.map(message => ({
+    ...message,
+    postedSelf: message.user.username === req.user.username,
+  }));
+  return messages
+}
 
 async function addLikedField(messages, req) {
   const token = req.cookies.token;
