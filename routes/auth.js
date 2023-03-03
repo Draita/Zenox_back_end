@@ -10,13 +10,23 @@ const authMiddleware = require('../middlewares/authMiddleware');
 const { v4: uuidv4 } = require('uuid');
 
 
+router.get('/get-mail', authMiddleware, async (req, res) => {
+  return res.status(200).json({ email: req.user.email });
+});
+
+
 router.post('/check-email', async (req, res) => {
   const { email } = req.body;
 
+
   try {
     const user = await User.findOne({ email });
+    var loggedIn = false;
+    if (req.cookies.token == user.token){
+      loggedIn = true;
+    }
     if (user) {
-      return res.status(200).json({ exists: true });
+      return res.status(200).json({ exists: true, username: user.username, loggedIn });
     } else {
       return res.status(200).json({ exists: false });
     }
@@ -25,6 +35,8 @@ router.post('/check-email', async (req, res) => {
     return res.status(500).json({ message: 'An error occurred while checking email' });
   }
 });
+
+
 
 router.post('/check-username', async (req, res) => {
   const { username } = req.body;
