@@ -7,6 +7,7 @@ const authMiddleware = async (req, res, next) => {
     if (!token) {
       return res.status(403).send("A token is required for authentication");
     }
+    // TODO: do something with decoded
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findOne({token});
 
